@@ -57,10 +57,15 @@
 
   var titulo = document.getElementById('titulo');
   var detalle = document.getElementById('detalle');
-  var crudo = location.hash.replace(/^#/, '');
-  var urls = crudo ? crudo.split('|').map(function (s) {
-    try { return decodeURIComponent(s); } catch (e) { return ''; }
-  }).filter(Boolean) : [];
+  // Google Sheets reescribe el separador «|» como «%7C» (y a veces codifica dos veces): se aceptan las dos formas.
+  function decodificar(s) {
+    for (var i = 0; i < 3 && /^https?%3A/i.test(s); i++) {
+      try { s = decodeURIComponent(s); } catch (e) { return ''; }
+    }
+    return /^https?:\/\//i.test(s) ? s : '';
+  }
+  var crudo = location.hash.replace(/^#/, '') || (location.search.match(/[?&]l=([^&]*)/) || [])[1] || '';
+  var urls = crudo ? crudo.split(/\||%7C/i).map(decodificar).filter(Boolean) : [];
 
   if (!urls.length) {
     titulo.textContent = 'No hay links para abrir';
