@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Abriendo opciones…</title>
+<style>
+  :root { color-scheme: light dark; --bg: #ffffff; --fg: #1f2328; --muted: #59636e; --accent: #0969da; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #0d1117; --fg: #e6edf3; --muted: #9198a1; --accent: #4493f8; } }
+  body { margin: 0; padding: 24px 16px; background: var(--bg); color: var(--fg); font: 16px/1.5 system-ui, sans-serif; }
+  main { max-width: 640px; margin: 0 auto; }
+  h1 { font-size: 20px; margin: 0 0 12px; }
+  p { margin: 8px 0; color: var(--muted); }
+  ol { padding-left: 20px; }
+  li { margin: 8px 0; word-break: break-all; }
+  a { color: var(--accent); }
+  .aviso { border-left: 4px solid #d29922; padding: 8px 12px; color: var(--fg); }
+</style>
+</head>
+<body>
+<main>
+  <h1 id="titulo">Abriendo las opciones…</h1>
+  <div id="detalle"></div>
+</main>
+<script>
+(function () {
+  // Tiendas permitidas: solo se abren solas las de esta lista (evita usar la página para redirigir a cualquier sitio).
+  var TIENDAS = [
+    'mercadolivre.com.br', 'mercadolivre.com', 'amazon.com.br', 'shopee.com.br', 'iherb.com',
+    'drogal.com.br', 'drogariavenancio.com.br', 'paguemenos.com.br', 'farmaciaindiana.com.br',
+    'extrafarma.com.br', 'drogasil.com.br', 'drogaraia.com.br', 'drogariasaopaulo.com.br',
+    'panvel.com', 'magazineluiza.com.br', 'mundoverde.com.br', 'gsuplementos.com.br',
+    'duxhumanhealth.com', 'vitafor.com.br', 'maxtitanium.com.br', 'bellnutryalimentos.com.br',
+    'montenegronutrition.com.br', 'rakkau.com.br', 'nutylac.com.br', 'adali.com.br'
+  ];
+
+  function permitida(u) {
+    var a = document.createElement('a');
+    a.href = u;
+    if (a.protocol !== 'https:') return false;
+    var h = a.hostname.toLowerCase();
+    return TIENDAS.some(function (d) { return h === d || h.slice(-(d.length + 1)) === '.' + d; });
+  }
+
+  function lista(urls) {
+    var ol = document.createElement('ol');
+    urls.forEach(function (u) {
+      var li = document.createElement('li');
+      var a = document.createElement('a');
+      a.href = u; a.textContent = u; a.target = '_blank'; a.rel = 'noopener';
+      li.appendChild(a); ol.appendChild(li);
+    });
+    return ol;
+  }
+
+  var titulo = document.getElementById('titulo');
+  var detalle = document.getElementById('detalle');
+  var crudo = location.hash.replace(/^#/, '');
+  var urls = crudo ? crudo.split('|').map(function (s) {
+    try { return decodeURIComponent(s); } catch (e) { return ''; }
+  }).filter(Boolean) : [];
+
+  if (!urls.length) {
+    titulo.textContent = 'No hay links para abrir';
+    return;
+  }
+
+  var buenas = urls.filter(permitida);
+  if (buenas.length !== urls.length) {
+    titulo.textContent = 'Revisá los links';
+    var p = document.createElement('p');
+    p.textContent = 'Alguno no es de una tienda conocida, así que no los abro solos. Abrilos a mano si los reconocés:';
+    detalle.appendChild(p);
+    detalle.appendChild(lista(urls));
+    return;
+  }
+
+  // Orden final de pestañas: [Drive] [1.ª] [2.ª] [3.ª].
+  // Esta pestaña ya está a la derecha del Drive: abro la 2.ª y la 3.ª a su derecha y después la convierto en la 1.ª.
+  var bloqueada = false;
+  for (var i = 1; i < buenas.length; i++) {
+    var w = window.open(buenas[i], '_blank');
+    if (!w) { bloqueada = true; break; }
+  }
+
+  if (bloqueada) {
+    titulo.textContent = 'Chrome bloqueó las pestañas nuevas';
+    var aviso = document.createElement('p');
+    aviso.className = 'aviso';
+    aviso.textContent = 'Solo la primera vez: tocá el ícono de ventana bloqueada a la derecha de la barra de direcciones, elegí «Permitir siempre ventanas emergentes y redirecciones» y volvé a hacer clic en el link de la planilla. Mientras tanto, acá están las 3 opciones en orden:';
+    detalle.appendChild(aviso);
+    detalle.appendChild(lista(buenas));
+    return;
+  }
+
+  location.replace(buenas[0]);
+})();
+</script>
+</body>
+</html>
